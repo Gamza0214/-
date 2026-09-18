@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>단어 테스트 모델</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #f5f5f7;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            width: 100%;
+            max-width: 500px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            color: #86868b;
+            margin-bottom: 20px;
+        }
+        .title-sub {
+            text-align: center;
+            color: #6e6e73;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        .word {
+            font-size: 32px;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 30px;
+            color: #1d1d1f;
+        }
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .btn {
+            padding: 16px;
+            border: 1px solid #e5e5ea;
+            border-radius: 12px;
+            background: white;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+            color: #1d1d1f;
+        }
+        .btn:hover:not(:disabled) {
+            background-color: #f5f5f7;
+            border-color: #0071e3;
+        }
+        .btn.correct {
+            background-color: #0071e3 !important;
+            color: white !important;
+            border-color: #0071e3 !important;
+            font-weight: 600;
+        }
+        .btn.wrong {
+            background-color: #ff3b30 !important;
+            color: white !important;
+            border-color: #ff3b30 !important;
+            font-weight: 600;
+        }
+        .result-msg {
+            text-align: center;
+            font-weight: 700;
+            font-size: 18px;
+            margin-top: 20px;
+            height: 24px;
+        }
+        .result-msg.correct-text { color: #0071e3; }
+        .result-msg.wrong-text { color: #ff3b30; }
+        .next-btn {
+            margin-top: 20px;
+            width: 100%;
+            padding: 14px;
+            background-color: #1d1d1f;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            display: none;
+        }
+        .next-btn:hover { background-color: #333336; }
+        .score-board {
+            text-align: center;
+            padding: 20px;
+        }
+        .score-board h2 { font-size: 24px; margin-bottom: 10px; }
+        .score-board p { font-size: 18px; color: #6e6e73; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="card" id="quiz-card">
+    <div class="header">
+        <span>한글 뜻 맞히기</span>
+        <span id="progress">1/120</span>
+    </div>
+    <div class="title-sub">아래 4개의 보기 중에 알맞은 뜻을 고르세요.</div>
+    <div class="word" id="target-word">Word</div>
+    <div class="options" id="options-container"></div>
+    <div class="result-msg" id="result-message"></div>
+    <button class="next-btn" id="next-btn" onclick="nextQuestion()">다음 문제로</button>
+</div>
+
+<script>
+const vocabulary = [
+    { eng: "breakthrough", kor: "획기적 발견, 돌파구" },
+    { eng: "manipulate", kor: "조작하다, 조정하다" },
+    { eng: "discipline", kor: "학문 분야" },
+    { eng: "proactive", kor: "사전 대책을 강구하는" },
+    { eng: "barrier", kor: "장애물, 장벽" },
+    { eng: "resolve", kor: "해결하다" },
+    { eng: "medium", kor: "매체 (pl. media)" },
+    { eng: "existential", kor: "실존적인" },
+    { eng: "pebble", kor: "조약돌" },
+    { eng: "reinforce", kor: "강화하다" },
+    { eng: "discriminatory", kor: "차별적인" },
+    { eng: "accountability", kor: "책임" },
+    { eng: "component", kor: "구성 요소" },
+    { eng: "specify", kor: "구체적으로 명시하다" },
+    { eng: "satisfaction", kor: "만족(감)" },
+    { eng: "combine", kor: "합치다, 결합하다" },
+    { eng: "predictable", kor: "너무 뻔한, 예측 가능한" },
+    { eng: "trait", kor: "특성" },
+    { eng: "file", kor: "소송·신청 등을 제기하다" },
+    { eng: "phase", kor: "단계, 국면" },
+    { eng: "transition", kor: "전환/이행하다; 변화, 전환" },
+    { eng: "representation", kor: "재현" },
+    { eng: "competent", kor: "유능한" },
+    { eng: "reasonably", kor: "합리적으로" },
+    { eng: "controversy", kor: "논쟁, 논란" },
+    { eng: "debt", kor: "채무, 빚" },
+    { eng: "assert", kor: "주장하다" },
+    { eng: "ultimate", kor: "궁극적인" },
+    { eng: "potentially", kor: "잠재적으로" },
+    { eng: "frankness", kor: "솔직함" },
+    { eng: "conduct", kor: "수행하다; 행위" },
+    { eng: "navigate", kor: "헤쳐 나가다, 항해하다" },
+    { eng: "harmonise", kor: "조화시키다" },
+    { eng: "isolation", kor: "고립" },
+    { eng: "peer", kor: "또래, 동료" },
+    { eng: "mend", kor: "고치다" },
+    { eng: "expertise", kor: "전문성" },
+    { eng: "profession", kor: "직업" },
+    { eng: "obvious", kor: "명백한, 분명한" },
+    { eng: "imply", kor: "함축[암시]하다" },
+    { eng: "intensity", kor: "강도, 격렬함" },
+    { eng: "disengaged", kor: "흥미를 잃은, 떨어져 있는" },
+    { eng: "liberation", kor: "해방" },
+    { eng: "grasp", kor: "꽉 움켜쥐다" },
+    { eng: "repetitive", kor: "반복적인" },
+    { eng: "contemporary", kor: "현대의, 동시대의" },
+    { eng: "approximate", kor: "대략적인, 근사치적인" },
+    { eng: "ambiguous", kor: "모호한" },
+    { eng: "inevitably", kor: "필연적으로, 불가피하게" },
+    { eng: "cooperation", kor: "협력" },
+    { eng: "leap", kor: "비약, 도약" },
+    { eng: "disconnect", kor: "단절되다" },
+    { eng: "alienate", kor: "멀어지게 만들다" },
+    { eng: "vitally", kor: "매우" },
+    { eng: "coordinate", kor: "대등하게 하다, 조정하다" },
+    { eng: "unmet", kor: "채워지지[충족되지] 않은" },
+    { eng: "justify", kor: "정당화하다" },
+    { eng: "rational", kor: "합리적인, 이성적인" },
+    { eng: "uphold", kor: "옹호하다, 유지시킬다" },
+    { eng: "capacity", kor: "능력" },
+    { eng: "beneficial", kor: "유익한" },
+    { eng: "lengthen", kor: "연장하다" },
+    { eng: "outbreak", kor: "발생, 발발" },
+    { eng: "coin", kor: "새로운 낱말·어구를 만들어 내다" },
+    { eng: "addiction", kor: "중독" },
+    { eng: "definition", kor: "정의" },
+    { eng: "qualitatively", kor: "질적으로" },
+    { eng: "subsequent", kor: "그 이후의, 연이은" },
+    { eng: "dominant", kor: "지배적인" },
+    { eng: "objection", kor: "반론, 반대" },
+    { eng: "undermine", kor: "약화하다" },
+    { eng: "investment", kor: "투자" },
+    { eng: "impression", kor: "인상" },
+    { eng: "extract", kor: "추출하다" },
+    { eng: "indicator", kor: "지표" },
+    { eng: "continuous", kor: "연속적인, 계속적인" },
+    { eng: "last", kor: "지속되다" },
+    { eng: "vary", kor: "다르다" },
+    { eng: "cognitive", kor: "인지적인, 인지의" },
+    { eng: "exclusively", kor: "배타적으로, 독점적으로" },
+    { eng: "resist", kor: "저항하다" },
+    { eng: "crowded", kor: "붐비는" },
+    { eng: "unintelligible", kor: "이해할 수 없는" },
+    { eng: "tactic", kor: "전략" },
+    { eng: "intimacy", kor: "친밀감" },
+    { eng: "stability", kor: "안정" },
+    { eng: "constrained", kor: "제한된" },
+    { eng: "endurance", kor: "지구력, 인내력, 참을성" },
+    { eng: "exploit", kor: "활용하다, 이용하다" },
+    { eng: "distinguish", kor: "구별하다" },
+    { eng: "context", kor: "환경, 맥락" },
+    { eng: "typically", kor: "일반적으로" },
+    { eng: "merit", kor: "가치" },
+    { eng: "notable", kor: "눈에 띄는" },
+    { eng: "decline", kor: "쇠퇴" },
+    { eng: "bonding", kor: "유대" },
+    { eng: "distinct", kor: "구별되는, 뚜렷한" },
+    { eng: "rigid", kor: "엄격한, 경직된" },
+    { eng: "arrangement", kor: "배치" },
+    { eng: "explore", kor: "탐색하다" },
+    { eng: "inconsistent", kor: "일관성이 없는" },
+    { eng: "face", kor: "직면하다" },
+    { eng: "possibility", kor: "가능성" },
+    { eng: "misleading", kor: "오해를 일으키는" },
+    { eng: "emphasis", kor: "강조" },
+    { eng: "negativity", kor: "부정적 성향, 부정성" },
+    { eng: "companion", kor: "동반자" },
+    { eng: "misery", kor: "불행" },
+    { eng: "inconclusive", kor: "결론이 나지 않은" },
+    { eng: "misconception", kor: "오해" },
+    { eng: "equate", kor: "동일하다, 같다" },
+    { eng: "accumulation", kor: "축적" },
+    { eng: "consensus", kor: "합의" },
+    { eng: "hostility", kor: "적개심" },
+    { eng: "statement", kor: "진술" },
+    { eng: "contribution", kor: "기여" },
+    { eng: "demonstrate", kor: "증명하다, 입증하다" },
+    { eng: "signal", kor: "신호를 보내다" },
+    { eng: "inference", kor: "추론" },
+    { eng: "apparent", kor: "눈에 보이는, 외견상의, 분명한" },
+    { eng: "interpret", kor: "해석하다" },
+    { eng: "protest", kor: "저항, 항의" },
+    { eng: "stable", kor: "안정적인" },
+    { eng: "collaborate", kor: "협력하다" },
+    { eng: "desire", kor: "욕구" },
+    { eng: "engagement", kor: "참여" },
+    { eng: "neglect", kor: "무시하다" },
+    { eng: "outfit", kor: "복장" },
+    { eng: "striving", kor: "분투" },
+    { eng: "overlook", kor: "간과하다" },
+    { eng: "sustain", kor: "지속하다, 유지하다" },
+    { eng: "acknowledge", kor: "인정하다" },
+    { eng: "migrate", kor: "이동하다, 이주하다" },
+    { eng: "predator", kor: "포식자" },
+    { eng: "density", kor: "밀도" },
+    { eng: "substance", kor: "물질" },
+    { eng: "stimulating", kor: "자극적인" },
+    { eng: "adapt", kor: "적응하다" },
+    { eng: "deterministic", kor: "결정론적인" },
+    { eng: "unimaginable", kor: "상상할 수 없는" },
+    { eng: "progress", kor: "발전하다; 발전, 전진" },
+    { eng: "reasoning", kor: "추론" },
+    { eng: "insight", kor: "통찰" },
+    { eng: "hypothesis", kor: "가설" },
+    { eng: "reward", kor: "보상" },
+    { eng: "distribute", kor: "나누어 주다" },
+    { eng: "neutral", kor: "중립적인" },
+    { eng: "obligation", kor: "의무" },
+    { eng: "compatible", kor: "양립하는" },
+    { eng: "basically", kor: "본질적으로" }
+];
+
+let questions = [];
+let currentIndex = 0;
+let score = 0;
+
+function shuffle(array) {
+    return array.sort(() => Math.random() - 0.5);
+}
+
+function initQuiz() {
+    questions = shuffle([...vocabulary]);
+    currentIndex = 0;
+    score = 0;
+    showQuestion();
+}
+
+function showQuestion() {
+    const q = questions[currentIndex];
+    document.getElementById("progress").innerText = `${currentIndex + 1}/${questions.length}`;
+    document.getElementById("target-word").innerText = q.eng;
+    document.getElementById("result-message").innerText = "";
+    document.getElementById("result-message").className = "result-msg";
+    document.getElementById("next-btn").style.display = "none";
+
+    let options = [q.kor];
+    while (options.length < 4) {
+        const randomItem = vocabulary[Math.floor(Math.random() * vocabulary.length)].kor;
+        if (!options.includes(randomItem)) {
+            options.push(randomItem);
+        }
+    }
+    options = shuffle(options);
+
+    const optionsContainer = document.getElementById("options-container");
+    optionsContainer.innerHTML = "";
+
+    options.forEach(option => {
+        const btn = document.createElement("button");
+        btn.className = "btn";
+        btn.innerText = option;
+        btn.onclick = () => checkAnswer(btn, option, q.kor);
+        optionsContainer.appendChild(btn);
+    });
+}
+
+function checkAnswer(selectedBtn, selectedOption, correctOption) {
+    const buttons = document.querySelectorAll(".btn");
+    buttons.forEach(btn => btn.disabled = true);
+
+    const resultMsg = document.getElementById("result-message");
+
+    if (selectedOption === correctOption) {
+        selectedBtn.classList.add("correct");
+        resultMsg.innerText = "⭕ 정답";
+        resultMsg.classList.add("correct-text");
+        score++;
+    } else {
+        selectedBtn.classList.add("wrong");
+        resultMsg.innerText = "❌ 오답";
+        resultMsg.classList.add("wrong-text");
+       
+        buttons.forEach(btn => {
+            if (btn.innerText === correctOption) {
+                btn.classList.add("correct");
+            }
+        });
+    }
+
+    document.getElementById("next-btn").style.display = "block";
+}
+
+function nextQuestion() {
+    currentIndex++;
+    if (currentIndex < questions.length) {
+        showQuestion();
+    } else {
+        showScore();
+    }
+}
+
+function showScore() {
+    const card = document.getElementById("quiz-card");
+    card.innerHTML = `
+        <div class="score-board">
+            <h2>테스트 완료!</h2>
+            <p>총 <strong>${questions.length}</strong>문제 중 <strong>${score}</strong>문제를 맞혔습니다.</p>
+            <button class="next-btn" style="display:block;" onclick="location.reload()">다시 풀기</button>
+        </div>
+    `;
+}
+
+initQuiz();
+</script>
+</body>
+</html>
